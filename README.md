@@ -9,7 +9,17 @@ api/   Laravel 12 (API) — PHP 8.4, PostgreSQL 17, Redis 8
 web/   React 19 + Vite + Tailwind CSS 4
 ```
 
-Sanctum e Spatie Permission ainda não foram instalados — entram na Fase 1 (Identity e Multi-tenancy), ver roadmap na documentação.
+Fase 1 (Identity e Multi-tenancy) em andamento: Users, Tenants, TenantUsers, Sanctum (token) e Spatie Permission (roles/permissions por tenant, via teams) já implementados. Ver roadmap completo na documentação.
+
+### Autenticação e tenants
+
+- `POST /api/login` — `{ email, password }` → token + tenants do usuário.
+- `GET /api/me` — dados do usuário autenticado (`Authorization: Bearer <token>`).
+- `POST /api/logout` — invalida o token atual.
+- `POST /api/forgot-password` / `POST /api/reset-password` — recuperação de senha (link aponta pro `FRONTEND_URL`).
+- `GET /api/tenant` — requer `auth:sanctum` + header `Host: <subdominio>.localhost` resolvendo o tenant ativo; 403 se o usuário não pertencer a ele.
+
+Tenant é resolvido pelo subdomínio do `Host` da requisição (ex: `clinica-teste.localhost`). Isolamento de dados entre tenants é feito via `App\Models\Concerns\BelongsToTenant` (global scope por `tenant_id`), a ser usado pelos models das próximas fases.
 
 ## Rodando o ambiente
 
