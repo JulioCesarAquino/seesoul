@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Models\Scopes;
+namespace App\Models\Tenancy\Scopes;
 
-use App\Services\TenantContext;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Tenancy;
 
-use App\Models\Tenant;
+use App\Models\Tenancy\Tenant;
 
 class TenantContext
 {

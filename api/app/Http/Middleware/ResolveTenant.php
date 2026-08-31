@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Tenant;
-use App\Services\TenantContext;
+use App\Models\Tenancy\Tenant;
+use App\Services\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Spatie\Permission\PermissionRegistrar;

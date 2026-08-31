@@ -1,11 +1,14 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Identity;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Clinical\Person;
+use App\Models\Tenancy\Tenant;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -58,5 +61,13 @@ class User extends Authenticatable
     public function tenants(): BelongsToMany
     {
         return $this->belongsToMany(Tenant::class, 'tenant_users')->withTimestamps();
+    }
+
+    /**
+     * @return HasOne<Person, $this>
+     */
+    public function person(): HasOne
+    {
+        return $this->hasOne(Person::class);
     }
 }

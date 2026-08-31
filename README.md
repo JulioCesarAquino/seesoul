@@ -9,7 +9,25 @@ api/   Laravel 12 (API) — PHP 8.4, PostgreSQL 17, Redis 8
 web/   React 19 + Vite + Tailwind CSS 4
 ```
 
-Fase 1 (Identity e Multi-tenancy) em andamento: Users, Tenants, TenantUsers, Sanctum (token) e Spatie Permission (roles/permissions por tenant, via teams) já implementados. Ver roadmap completo na documentação.
+Fase 1 (Identity e Multi-tenancy) e Fase 2 (Pessoas e profissionais) implementadas. Ver roadmap completo na documentação.
+
+### Arquitetura do backend (Package by Feature)
+
+O `api/app` é organizado por domínio (seção 10 da documentação), não por tipo de arquivo:
+
+```
+app/
+  Models/{Identity,Tenancy,Clinical}/...
+  Http/Controllers/{Identity,Tenancy,Clinical}/...
+  Http/Requests/{Identity,Clinical}/...
+  Services/{Identity,Tenancy,Clinical}/...
+```
+
+- **Identity** — `User`, autenticação (login/logout/me/recuperação de senha).
+- **Tenancy** — `Tenant`, isolamento por `tenant_id` (`BelongsToTenant`, `TenantScope`, `TenantContext`).
+- **Clinical** — `Person`, `Patient`, `Psychologist`, `Staff`, `Specialty`.
+
+Controllers são **single action** (`__invoke()`), nomeados `{Substantivo}{Verbo}Controller` (ex: `PatientStoreController`). Validação fica em `Http\Requests\{Domínio}\{Substantivo}{Verbo}Request`. Regra de negócio de escrita (store/update/destroy) fica numa classe `Services\{Domínio}\{Substantivo}{Verbo}Service` com método `execute()`; leituras (index/show) ficam direto no controller, sem Service.
 
 ### Autenticação e tenants
 
@@ -19,7 +37,18 @@ Fase 1 (Identity e Multi-tenancy) em andamento: Users, Tenants, TenantUsers, San
 - `POST /api/forgot-password` / `POST /api/reset-password` — recuperação de senha (link aponta pro `FRONTEND_URL`).
 - `GET /api/tenant` — requer `auth:sanctum` + header `Host: <subdominio>.localhost` resolvendo o tenant ativo; 403 se o usuário não pertencer a ele.
 
-Tenant é resolvido pelo subdomínio do `Host` da requisição (ex: `clinica-teste.localhost`). Isolamento de dados entre tenants é feito via `App\Models\Concerns\BelongsToTenant` (global scope por `tenant_id`), a ser usado pelos models das próximas fases.
+Tenant é resolvido pelo subdomínio do `Host` da requisição (ex: `clinica-teste.localhost`). Isolamento de dados entre tenants é feito via `App\Models\Tenancy\Concerns\BelongsToTenant` (global scope por `tenant_id`), usado pelos models de Pessoas/Pacientes/Psicólogos/Staff abaixo.
+
+### Pessoas e profissionais
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost` (exceto `specialties`, que é um catálogo global):
+
+- `GET/POST /api/patients`, `GET/PUT/DELETE /api/patients/{id}` — pacientes do tenant ativo.
+- `GET/POST /api/psychologists`, `GET/PUT/DELETE /api/psychologists/{id}` — psicólogos do tenant ativo (CRP, valor de atendimento, especialidades via `specialty_ids`).
+- `GET/POST /api/staff`, `GET/PUT/DELETE /api/staff/{id}` — equipe administrativa/recepção do tenant ativo.
+- `GET/POST/PUT/DELETE /api/specialties` — catálogo global de especialidades (não é por tenant).
+
+`Person` é uma entidade global (dado civil: nome, CPF, data de nascimento, telefone, email, endereço) — uma mesma pessoa pode ser paciente/psicólogo/staff em vários tenants diferentes, mas cada vínculo (`Patient`/`Psychologist`/`Staff`) é isolado por tenant. Ao criar um paciente/psicólogo/staff, o sistema procura uma `Person` existente pelo CPF antes de criar uma nova (detecção de duplicidade). As regras de validação e a lista de campos de `Person` ficam centralizadas em `Person::rules()` / `Person::fieldNames()`, reaproveitadas pelas Requests de Patient/Psychologist/Staff.
 
 ## Rodando o ambiente
 

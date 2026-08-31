@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Models\Concerns;
+namespace App\Models\Tenancy\Concerns;
 
-use App\Models\Scopes\TenantScope;
-use App\Services\TenantContext;
+use App\Models\Tenancy\Scopes\TenantScope;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToTenant
