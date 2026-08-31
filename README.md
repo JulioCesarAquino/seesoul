@@ -67,6 +67,18 @@ Datas trafegam em ISO 8601 com offset (ex: `2026-08-17T10:00:00-03:00`) e são s
 
 Qualquer falha nessas checagens retorna `422`.
 
+### Atendimento clínico (Fase 4 — parte 1)
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost`:
+
+- `GET/POST /api/medical-records`, `GET/DELETE /api/medical-records/{id}` — prontuário do paciente (`patient_id`). Um por paciente por tenant; `DELETE` é soft delete (`deleted_at`), o registro nunca é apagado de verdade.
+- `GET/POST /api/attendances`, `GET /api/attendances/{id}` — registro de que um agendamento realmente aconteceu. Só pode ser criado a partir de um `Appointment` já com `status = completed`, e só um atendimento por agendamento. Sem `PUT`/`DELETE`: é um registro histórico.
+- `GET/POST /api/evolutions`, `GET/PUT/DELETE /api/evolutions/{id}` — anotações de evolução vinculadas a um `medical_record_id` (e opcionalmente a um `attendance_id`). O autor (`author_user_id`) é sempre o usuário autenticado, nunca vem do corpo da requisição. `DELETE` também é soft delete.
+
+`Attendance`, `MedicalRecord` e `Evolution` são isolados por tenant via `BelongsToTenant`, e suas FKs para `patients`/`psychologists`/`appointments` usam `restrictOnDelete` (em vez de `cascadeOnDelete`) para proteger o histórico clínico de ser apagado junto caso um paciente seja excluído.
+
+Fora de escopo nesta parte da Fase 4 (fica para depois): `Document`/`Attachment` (upload de arquivo) e `Auditoria` (log de acesso/alteração).
+
 ## Rodando o ambiente
 
 ```bash

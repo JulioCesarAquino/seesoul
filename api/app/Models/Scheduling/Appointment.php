@@ -2,12 +2,14 @@
 
 namespace App\Models\Scheduling;
 
+use App\Models\Clinical\Attendance;
 use App\Models\Clinical\Patient;
 use App\Models\Clinical\Psychologist;
 use App\Models\Tenancy\Concerns\BelongsToTenant;
 use App\Models\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Appointment extends Model
 {
@@ -71,5 +73,13 @@ class Appointment extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * @return HasOne<Attendance, $this>
+     */
+    public function attendance(): HasOne
+    {
+        return $this->hasOne(Attendance::class);
     }
 }

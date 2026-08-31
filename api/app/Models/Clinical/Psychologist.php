@@ -71,4 +71,12 @@ class Psychologist extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+
+    /**
+     * @return HasMany<Attendance, $this>
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
 }

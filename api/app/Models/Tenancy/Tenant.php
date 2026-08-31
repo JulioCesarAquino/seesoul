@@ -2,6 +2,9 @@
 
 namespace App\Models\Tenancy;
 
+use App\Models\Clinical\Attendance;
+use App\Models\Clinical\Evolution;
+use App\Models\Clinical\MedicalRecord;
 use App\Models\Clinical\Patient;
 use App\Models\Clinical\Psychologist;
 use App\Models\Clinical\Staff;
@@ -23,7 +26,7 @@ class Tenant extends Model
     ];
 
     /**
-     * Users belonging to this tenant.
+     * Usuários pertencentes a este tenant.
      *
      * @return BelongsToMany<User, $this>
      */
@@ -78,5 +81,29 @@ class Tenant extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    /**
+     * @return HasMany<MedicalRecord, $this>
+     */
+    public function medicalRecords(): HasMany
+    {
+        return $this->hasMany(MedicalRecord::class);
+    }
+
+    /**
+     * @return HasMany<Attendance, $this>
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    /**
+     * @return HasMany<Evolution, $this>
+     */
+    public function evolutions(): HasMany
+    {
+        return $this->hasMany(Evolution::class);
     }
 }

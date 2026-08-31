@@ -1,5 +1,17 @@
 <?php
 
+use App\Http\Controllers\Clinical\AttendanceIndexController;
+use App\Http\Controllers\Clinical\AttendanceShowController;
+use App\Http\Controllers\Clinical\AttendanceStoreController;
+use App\Http\Controllers\Clinical\EvolutionDestroyController;
+use App\Http\Controllers\Clinical\EvolutionIndexController;
+use App\Http\Controllers\Clinical\EvolutionShowController;
+use App\Http\Controllers\Clinical\EvolutionStoreController;
+use App\Http\Controllers\Clinical\EvolutionUpdateController;
+use App\Http\Controllers\Clinical\MedicalRecordDestroyController;
+use App\Http\Controllers\Clinical\MedicalRecordIndexController;
+use App\Http\Controllers\Clinical\MedicalRecordShowController;
+use App\Http\Controllers\Clinical\MedicalRecordStoreController;
 use App\Http\Controllers\Clinical\PatientDestroyController;
 use App\Http\Controllers\Clinical\PatientIndexController;
 use App\Http\Controllers\Clinical\PatientShowController;
@@ -93,5 +105,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/appointments', AppointmentStoreController::class);
         Route::get('/appointments/{appointment}', AppointmentShowController::class);
         Route::put('/appointments/{appointment}', AppointmentUpdateController::class);
+
+        Route::get('/medical-records', MedicalRecordIndexController::class);
+        Route::post('/medical-records', MedicalRecordStoreController::class);
+        Route::get('/medical-records/{medicalRecord}', MedicalRecordShowController::class);
+        Route::delete('/medical-records/{medicalRecord}', MedicalRecordDestroyController::class);
+
+        Route::get('/attendances', AttendanceIndexController::class);
+        Route::post('/attendances', AttendanceStoreController::class);
+        Route::get('/attendances/{attendance}', AttendanceShowController::class);
+
+        Route::get('/evolutions', EvolutionIndexController::class);
+        Route::post('/evolutions', EvolutionStoreController::class);
+        Route::get('/evolutions/{evolution}', EvolutionShowController::class);
+        Route::put('/evolutions/{evolution}', EvolutionUpdateController::class);
+        Route::delete('/evolutions/{evolution}', EvolutionDestroyController::class);
     });
 });
