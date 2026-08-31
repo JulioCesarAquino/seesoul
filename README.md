@@ -9,7 +9,26 @@ api/   Laravel 12 (API) — PHP 8.4, PostgreSQL 17, Redis 8
 web/   React 19 + Vite + Tailwind CSS 4
 ```
 
-Fase 1 (Identity e Multi-tenancy) em andamento: Users, Tenants, TenantUsers, Sanctum (token) e Spatie Permission (roles/permissions por tenant, via teams) já implementados. Ver roadmap completo na documentação.
+Fase 1 (Identity e Multi-tenancy), Fase 2 (Pessoas e profissionais) e Fase 3 (Agenda) implementadas. Ver roadmap completo na documentação.
+
+### Arquitetura do backend (Package by Feature)
+
+O `api/app` é organizado por domínio (seção 10 da documentação), não por tipo de arquivo:
+
+```
+app/
+  Models/{Identity,Tenancy,Clinical}/...
+  Http/Controllers/{Identity,Tenancy,Clinical}/...
+  Http/Requests/{Identity,Clinical}/...
+  Services/{Identity,Tenancy,Clinical}/...
+```
+
+- **Identity** — `User`, autenticação (login/logout/me/recuperação de senha).
+- **Tenancy** — `Tenant` (com `timezone`), isolamento por `tenant_id` (`BelongsToTenant`, `TenantScope`, `TenantContext`).
+- **Clinical** — `Person`, `Patient`, `Psychologist`, `Staff`, `Specialty`.
+- **Scheduling** — `Availability`, `ScheduleBlock`, `Appointment`.
+
+Controllers são **single action** (`__invoke()`), nomeados `{Substantivo}{Verbo}Controller` (ex: `PatientStoreController`). Validação fica em `Http\Requests\{Domínio}\{Substantivo}{Verbo}Request`. Regra de negócio de escrita (store/update/destroy) fica numa classe `Services\{Domínio}\{Substantivo}{Verbo}Service` com método `execute()`; leituras (index/show) ficam direto no controller, sem Service.
 
 ### Autenticação e tenants
 
@@ -19,7 +38,46 @@ Fase 1 (Identity e Multi-tenancy) em andamento: Users, Tenants, TenantUsers, San
 - `POST /api/forgot-password` / `POST /api/reset-password` — recuperação de senha (link aponta pro `FRONTEND_URL`).
 - `GET /api/tenant` — requer `auth:sanctum` + header `Host: <subdominio>.localhost` resolvendo o tenant ativo; 403 se o usuário não pertencer a ele.
 
-Tenant é resolvido pelo subdomínio do `Host` da requisição (ex: `clinica-teste.localhost`). Isolamento de dados entre tenants é feito via `App\Models\Concerns\BelongsToTenant` (global scope por `tenant_id`), a ser usado pelos models das próximas fases.
+Tenant é resolvido pelo subdomínio do `Host` da requisição (ex: `clinica-teste.localhost`). Isolamento de dados entre tenants é feito via `App\Models\Tenancy\Concerns\BelongsToTenant` (global scope por `tenant_id`), usado pelos models de Pessoas/Pacientes/Psicólogos/Staff abaixo.
+
+### Pessoas e profissionais
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost` (exceto `specialties`, que é um catálogo global):
+
+- `GET/POST /api/patients`, `GET/PUT/DELETE /api/patients/{id}` — pacientes do tenant ativo.
+- `GET/POST /api/psychologists`, `GET/PUT/DELETE /api/psychologists/{id}` — psicólogos do tenant ativo (CRP, valor de atendimento, especialidades via `specialty_ids`).
+- `GET/POST /api/staff`, `GET/PUT/DELETE /api/staff/{id}` — equipe administrativa/recepção do tenant ativo.
+- `GET/POST/PUT/DELETE /api/specialties` — catálogo global de especialidades (não é por tenant).
+
+`Person` é uma entidade global (dado civil: nome, CPF, data de nascimento, telefone, email, endereço) — uma mesma pessoa pode ser paciente/psicólogo/staff em vários tenants diferentes, mas cada vínculo (`Patient`/`Psychologist`/`Staff`) é isolado por tenant. Ao criar um paciente/psicólogo/staff, o sistema procura uma `Person` existente pelo CPF antes de criar uma nova (detecção de duplicidade). As regras de validação e a lista de campos de `Person` ficam centralizadas em `Person::rules()` / `Person::fieldNames()`, reaproveitadas pelas Requests de Patient/Psychologist/Staff.
+
+### Agenda
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost`:
+
+- `GET/POST /api/availabilities`, `GET/PUT/DELETE /api/availabilities/{id}` — janelas recorrentes de disponibilidade do psicólogo (`weekday` 0-6, `start_time`/`end_time`).
+- `GET/POST /api/schedule-blocks`, `GET/PUT/DELETE /api/schedule-blocks/{id}` — bloqueios pontuais na agenda do psicólogo (`starts_at`/`ends_at`, `reason`).
+- `GET/POST /api/appointments`, `GET/PUT /api/appointments/{id}` — agendamentos. Sem `DELETE`: um agendamento não é apagado, só tem o `status` alterado (`scheduled`, `confirmed`, `completed`, `cancelled`, `no_show`). Confirmação, cancelamento, remarcação e falta são todos feitos via `PUT` (atualizando `status` e/ou `starts_at`/`ends_at`).
+
+Datas trafegam em ISO 8601 com offset (ex: `2026-08-17T10:00:00-03:00`) e são sempre convertidas e armazenadas em UTC (`Carbon::parse(...)->utc()`), conforme preferência arquitetural da documentação (seção 28). Cada Tenant tem uma `timezone` própria (`America/Sao_Paulo` por padrão), usada por `App\Services\Scheduling\AppointmentConflictChecker` para checar, ao criar/remarcar um agendamento:
+
+1. o horário cai dentro de uma janela de `Availability` do psicólogo pro dia da semana (calculado no fuso do tenant);
+2. não colide com nenhum `ScheduleBlock`;
+3. não sobrepõe outro `Appointment` ativo (não cancelado) do mesmo psicólogo.
+
+Qualquer falha nessas checagens retorna `422`.
+
+### Atendimento clínico (Fase 4 — parte 1)
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost`:
+
+- `GET/POST /api/medical-records`, `GET/DELETE /api/medical-records/{id}` — prontuário do paciente (`patient_id`). Um por paciente por tenant; `DELETE` é soft delete (`deleted_at`), o registro nunca é apagado de verdade.
+- `GET/POST /api/attendances`, `GET /api/attendances/{id}` — registro de que um agendamento realmente aconteceu. Só pode ser criado a partir de um `Appointment` já com `status = completed`, e só um atendimento por agendamento. Sem `PUT`/`DELETE`: é um registro histórico.
+- `GET/POST /api/evolutions`, `GET/PUT/DELETE /api/evolutions/{id}` — anotações de evolução vinculadas a um `medical_record_id` (e opcionalmente a um `attendance_id`). O autor (`author_user_id`) é sempre o usuário autenticado, nunca vem do corpo da requisição. `DELETE` também é soft delete.
+
+`Attendance`, `MedicalRecord` e `Evolution` são isolados por tenant via `BelongsToTenant`, e suas FKs para `patients`/`psychologists`/`appointments` usam `restrictOnDelete` (em vez de `cascadeOnDelete`) para proteger o histórico clínico de ser apagado junto caso um paciente seja excluído.
+
+Fora de escopo nesta parte da Fase 4 (fica para depois): `Document`/`Attachment` (upload de arquivo) e `Auditoria` (log de acesso/alteração).
 
 ## Rodando o ambiente
 
