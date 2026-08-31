@@ -2,11 +2,15 @@
 
 namespace App\Models\Clinical;
 
+use App\Models\Scheduling\Appointment;
+use App\Models\Scheduling\Availability;
+use App\Models\Scheduling\ScheduleBlock;
 use App\Models\Tenancy\Concerns\BelongsToTenant;
 use App\Models\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Psychologist extends Model
 {
@@ -42,5 +46,29 @@ class Psychologist extends Model
     public function specialties(): BelongsToMany
     {
         return $this->belongsToMany(Specialty::class)->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Availability, $this>
+     */
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(Availability::class);
+    }
+
+    /**
+     * @return HasMany<ScheduleBlock, $this>
+     */
+    public function scheduleBlocks(): HasMany
+    {
+        return $this->hasMany(ScheduleBlock::class);
+    }
+
+    /**
+     * @return HasMany<Appointment, $this>
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 }

@@ -25,6 +25,20 @@ use App\Http\Controllers\Identity\AuthLoginController;
 use App\Http\Controllers\Identity\AuthLogoutController;
 use App\Http\Controllers\Identity\AuthMeController;
 use App\Http\Controllers\Identity\AuthResetPasswordController;
+use App\Http\Controllers\Scheduling\AppointmentIndexController;
+use App\Http\Controllers\Scheduling\AppointmentShowController;
+use App\Http\Controllers\Scheduling\AppointmentStoreController;
+use App\Http\Controllers\Scheduling\AppointmentUpdateController;
+use App\Http\Controllers\Scheduling\AvailabilityDestroyController;
+use App\Http\Controllers\Scheduling\AvailabilityIndexController;
+use App\Http\Controllers\Scheduling\AvailabilityShowController;
+use App\Http\Controllers\Scheduling\AvailabilityStoreController;
+use App\Http\Controllers\Scheduling\AvailabilityUpdateController;
+use App\Http\Controllers\Scheduling\ScheduleBlockDestroyController;
+use App\Http\Controllers\Scheduling\ScheduleBlockIndexController;
+use App\Http\Controllers\Scheduling\ScheduleBlockShowController;
+use App\Http\Controllers\Scheduling\ScheduleBlockStoreController;
+use App\Http\Controllers\Scheduling\ScheduleBlockUpdateController;
 use App\Http\Controllers\Tenancy\TenantShowController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,5 +76,22 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/staff/{staff}', StaffShowController::class);
         Route::put('/staff/{staff}', StaffUpdateController::class);
         Route::delete('/staff/{staff}', StaffDestroyController::class);
+
+        Route::get('/availabilities', AvailabilityIndexController::class);
+        Route::post('/availabilities', AvailabilityStoreController::class);
+        Route::get('/availabilities/{availability}', AvailabilityShowController::class);
+        Route::put('/availabilities/{availability}', AvailabilityUpdateController::class);
+        Route::delete('/availabilities/{availability}', AvailabilityDestroyController::class);
+
+        Route::get('/schedule-blocks', ScheduleBlockIndexController::class);
+        Route::post('/schedule-blocks', ScheduleBlockStoreController::class);
+        Route::get('/schedule-blocks/{scheduleBlock}', ScheduleBlockShowController::class);
+        Route::put('/schedule-blocks/{scheduleBlock}', ScheduleBlockUpdateController::class);
+        Route::delete('/schedule-blocks/{scheduleBlock}', ScheduleBlockDestroyController::class);
+
+        Route::get('/appointments', AppointmentIndexController::class);
+        Route::post('/appointments', AppointmentStoreController::class);
+        Route::get('/appointments/{appointment}', AppointmentShowController::class);
+        Route::put('/appointments/{appointment}', AppointmentUpdateController::class);
     });
 });

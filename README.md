@@ -9,7 +9,7 @@ api/   Laravel 12 (API) — PHP 8.4, PostgreSQL 17, Redis 8
 web/   React 19 + Vite + Tailwind CSS 4
 ```
 
-Fase 1 (Identity e Multi-tenancy) e Fase 2 (Pessoas e profissionais) implementadas. Ver roadmap completo na documentação.
+Fase 1 (Identity e Multi-tenancy), Fase 2 (Pessoas e profissionais) e Fase 3 (Agenda) implementadas. Ver roadmap completo na documentação.
 
 ### Arquitetura do backend (Package by Feature)
 
@@ -24,8 +24,9 @@ app/
 ```
 
 - **Identity** — `User`, autenticação (login/logout/me/recuperação de senha).
-- **Tenancy** — `Tenant`, isolamento por `tenant_id` (`BelongsToTenant`, `TenantScope`, `TenantContext`).
+- **Tenancy** — `Tenant` (com `timezone`), isolamento por `tenant_id` (`BelongsToTenant`, `TenantScope`, `TenantContext`).
 - **Clinical** — `Person`, `Patient`, `Psychologist`, `Staff`, `Specialty`.
+- **Scheduling** — `Availability`, `ScheduleBlock`, `Appointment`.
 
 Controllers são **single action** (`__invoke()`), nomeados `{Substantivo}{Verbo}Controller` (ex: `PatientStoreController`). Validação fica em `Http\Requests\{Domínio}\{Substantivo}{Verbo}Request`. Regra de negócio de escrita (store/update/destroy) fica numa classe `Services\{Domínio}\{Substantivo}{Verbo}Service` com método `execute()`; leituras (index/show) ficam direto no controller, sem Service.
 
@@ -49,6 +50,22 @@ Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localho
 - `GET/POST/PUT/DELETE /api/specialties` — catálogo global de especialidades (não é por tenant).
 
 `Person` é uma entidade global (dado civil: nome, CPF, data de nascimento, telefone, email, endereço) — uma mesma pessoa pode ser paciente/psicólogo/staff em vários tenants diferentes, mas cada vínculo (`Patient`/`Psychologist`/`Staff`) é isolado por tenant. Ao criar um paciente/psicólogo/staff, o sistema procura uma `Person` existente pelo CPF antes de criar uma nova (detecção de duplicidade). As regras de validação e a lista de campos de `Person` ficam centralizadas em `Person::rules()` / `Person::fieldNames()`, reaproveitadas pelas Requests de Patient/Psychologist/Staff.
+
+### Agenda
+
+Todas as rotas abaixo exigem `auth:sanctum` + header `Host: <subdominio>.localhost`:
+
+- `GET/POST /api/availabilities`, `GET/PUT/DELETE /api/availabilities/{id}` — janelas recorrentes de disponibilidade do psicólogo (`weekday` 0-6, `start_time`/`end_time`).
+- `GET/POST /api/schedule-blocks`, `GET/PUT/DELETE /api/schedule-blocks/{id}` — bloqueios pontuais na agenda do psicólogo (`starts_at`/`ends_at`, `reason`).
+- `GET/POST /api/appointments`, `GET/PUT /api/appointments/{id}` — agendamentos. Sem `DELETE`: um agendamento não é apagado, só tem o `status` alterado (`scheduled`, `confirmed`, `completed`, `cancelled`, `no_show`). Confirmação, cancelamento, remarcação e falta são todos feitos via `PUT` (atualizando `status` e/ou `starts_at`/`ends_at`).
+
+Datas trafegam em ISO 8601 com offset (ex: `2026-08-17T10:00:00-03:00`) e são sempre convertidas e armazenadas em UTC (`Carbon::parse(...)->utc()`), conforme preferência arquitetural da documentação (seção 28). Cada Tenant tem uma `timezone` própria (`America/Sao_Paulo` por padrão), usada por `App\Services\Scheduling\AppointmentConflictChecker` para checar, ao criar/remarcar um agendamento:
+
+1. o horário cai dentro de uma janela de `Availability` do psicólogo pro dia da semana (calculado no fuso do tenant);
+2. não colide com nenhum `ScheduleBlock`;
+3. não sobrepõe outro `Appointment` ativo (não cancelado) do mesmo psicólogo.
+
+Qualquer falha nessas checagens retorna `422`.
 
 ## Rodando o ambiente
 

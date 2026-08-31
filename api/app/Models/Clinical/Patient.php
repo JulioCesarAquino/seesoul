@@ -2,10 +2,12 @@
 
 namespace App\Models\Clinical;
 
+use App\Models\Scheduling\Appointment;
 use App\Models\Tenancy\Concerns\BelongsToTenant;
 use App\Models\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Patient extends Model
 {
@@ -31,5 +33,13 @@ class Patient extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * @return HasMany<Appointment, $this>
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 }

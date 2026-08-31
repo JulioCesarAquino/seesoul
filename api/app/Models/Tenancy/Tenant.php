@@ -6,6 +6,9 @@ use App\Models\Clinical\Patient;
 use App\Models\Clinical\Psychologist;
 use App\Models\Clinical\Staff;
 use App\Models\Identity\User;
+use App\Models\Scheduling\Appointment;
+use App\Models\Scheduling\Availability;
+use App\Models\Scheduling\ScheduleBlock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +19,7 @@ class Tenant extends Model
         'name',
         'subdomain',
         'status',
+        'timezone',
     ];
 
     /**
@@ -50,5 +54,29 @@ class Tenant extends Model
     public function staff(): HasMany
     {
         return $this->hasMany(Staff::class);
+    }
+
+    /**
+     * @return HasMany<Availability, $this>
+     */
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(Availability::class);
+    }
+
+    /**
+     * @return HasMany<ScheduleBlock, $this>
+     */
+    public function scheduleBlocks(): HasMany
+    {
+        return $this->hasMany(ScheduleBlock::class);
+    }
+
+    /**
+     * @return HasMany<Appointment, $this>
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 }
